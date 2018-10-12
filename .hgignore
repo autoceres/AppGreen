@@ -1,0 +1,10 @@
+syntax: glob
+build/*
+.idea/libraries/*
+.gradle/*
+.idea/workspace.xml
+captures/*
+*.iml
+local.properties
+externalNativeBuild/*
+.DS_Store/*
