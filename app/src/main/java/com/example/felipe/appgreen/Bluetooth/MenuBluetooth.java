@@ -4,6 +4,7 @@ package com.example.felipe.appgreen.Bluetooth;
  * Created by weber on 08/10/2017.
  */
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -47,6 +48,7 @@ public class MenuBluetooth extends AppCompatActivity{
     android.os.Handler meuHandler;
     StringBuilder dadosBluetooth = new StringBuilder();
 
+    @SuppressLint("HandlerLeak")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
