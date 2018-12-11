@@ -22,7 +22,7 @@ public class ListaDispositivosBluetooth extends ListActivity {
     private BluetoothAdapter adaptadorBluetooth = null;
 
     /* Variaveis */
-    static String ENDERECO_MAC = null;
+    public static String ENDERECO_MAC = null;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {

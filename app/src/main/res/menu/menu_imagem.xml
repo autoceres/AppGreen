@@ -22,5 +22,9 @@
         app:showAsAction="never"
         android:title="@string/linha" >
     </item>
+    <item
+        android:id="@+id/bt_conect"
+        android:orderInCategory="7"
+        android:title="@string/bt_conect" />
 
 </menu>

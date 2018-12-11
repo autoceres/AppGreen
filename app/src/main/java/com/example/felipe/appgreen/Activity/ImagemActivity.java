@@ -1,6 +1,11 @@
 package com.example.felipe.appgreen.Activity;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothSocket;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
@@ -23,6 +28,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.felipe.appgreen.Bluetooth.ListaDispositivosBluetooth;
+import com.example.felipe.appgreen.Bluetooth.MenuBluetooth;
 import com.example.felipe.appgreen.R;
 import com.example.felipe.appgreen.Tools.Permissao;
 import com.example.felipe.appgreen.Tools.PreferenciasEeD;
@@ -44,10 +51,13 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.imgproc.Moments;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class ImagemActivity extends AppCompatActivity {
 
@@ -122,11 +132,49 @@ public class ImagemActivity extends AppCompatActivity {
     };
 
 
+    //Variaveis para Buetooth
+    /*Bluetooth*/
+    BluetoothAdapter meuBluetoothAdapter = null;
+    private static String MAC = null;
+    BluetoothDevice meuDevice = null;
+    BluetoothSocket meuSocket = null;
+    UUID UUID_SERIAL_PORT = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb");
+    ConnectedThread connectedThread;
+
+    /*Variaveis de controle*/
+    private static final int SOLICITA_ATIVACAO_BT = 10;
+    private static final int SOLICITA_CONEXAO_BT = 20;
+    private static final int MENSAGEM_RECEBIDA_BT = 30;
+    boolean conectado = false;
+    android.os.Handler meuHandler;
+    StringBuilder dadosBluetooth = new StringBuilder();
+
+
+    @SuppressLint("HandlerLeak")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_imagem);
 
+
+        /*Pega o adaptador bluetooth do aparelho*/
+        meuBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+        /*Verifica se o aparelho realmente tem bluetooth ou nao*/
+        if (meuBluetoothAdapter == null){
+            /*Aparelho nao possui bluetooth*/
+            Toast.makeText(getApplicationContext(), "O aparelho não possui Bluetooth, o app será encerrado!", Toast.LENGTH_LONG).show();
+            finish();
+        } else {
+            /*Foi encontrado um adaptador bluetooth no aparelho
+              Sera verificado se o mesmo esta ligado ou nao */
+            if(!meuBluetoothAdapter.isEnabled()) {
+                /* Caso nao esteja ligado sera solicitado ao usuario para que ative ele */
+                Intent ativaBluetooth = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                startActivityForResult(ativaBluetooth, SOLICITA_ATIVACAO_BT);
+            }
+
+        }
 
         btMaisK = (Button) findViewById(R.id.btMaisKi);
         btMaisT = (Button) findViewById(R.id.btMaisTi);
@@ -413,6 +461,11 @@ public class ImagemActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
+        if(id == R.id.bt_conect){
+            Intent abreListaDispositivos = new Intent(ImagemActivity.this, ListaDispositivosBluetooth.class);
+            startActivityForResult(abreListaDispositivos, SOLICITA_CONEXAO_BT);
+        }
+
         if (id == R.id.action_openGallary) {
             Intent intent = new Intent();
             intent.setType("image/*");
@@ -443,12 +496,26 @@ public class ImagemActivity extends AppCompatActivity {
             bicoCinco.setTextColor(getResources().getColor(R.color.colorBicoDesligado));
             bicoCinco.setText("▇▇");
 
+            char [] enviar = new char[]{'a','b','c','d','e'};
+            String s = String.valueOf(enviar);
+            /*Verifica se esta conectado */
+            if(conectado){
+                String paraEnviar = "L";
+                connectedThread.enviar(s);
+                Toast.makeText(getApplicationContext(),"Bluetooth RST!", Toast.LENGTH_SHORT).show();
+            }else{
+                Toast.makeText(getApplicationContext(),"Bluetooth não está conectado!", Toast.LENGTH_SHORT).show();
+            }
+
             displayImage(sampledImage);
         }
 
 
 
         if(id == R.id.action_linha){
+            String paraEnviar = "";
+            char [] enviar = new char[]{'a','b','c','d','e'};
+//            char [] enviar = {'A','B','C','D','F'};
 
             if(sampledImage==null){
                 Context context = getApplicationContext();
@@ -602,28 +669,45 @@ public class ImagemActivity extends AppCompatActivity {
                 if((val[0]> 30) && (val[0] < 90)){
                     bicoUm.setTextColor(getResources().getColor(R.color.colorBicoAcionado));
                     bicoUm.setText("▇▇");
+                    enviar[0]='A';
                 }
                 else if((val[0]>= 90) && (val[0] < 150)){
                     bicoDois.setTextColor(getResources().getColor(R.color.colorBicoAcionado));
                     bicoDois.setText("▇▇");
+                    enviar[1]='B';
                 }
                 else if((val[0]>= 150) && (val[0] < 180)){
                     bicoTres.setTextColor(getResources().getColor(R.color.colorBicoAcionado));
                     bicoTres.setText("▇▇");
+                    enviar[2]='C';
                 }
                 else if((val[0]> 180) && (val[0] < 270)){
                     bicoQuatro.setTextColor(getResources().getColor(R.color.colorBicoAcionado));
                     bicoQuatro.setText("▇▇");
+                    enviar[3]='D';
                 }
                 else if((val[0]>= 270) && (val[0] < 330)){
                     bicoCinco.setTextColor(getResources().getColor(R.color.colorBicoAcionado));
                     bicoCinco.setText("▇▇");
+                    enviar[4]='E';
                 }
 
                 Imgproc.line(outDilate, new Point(val[2], val[3]), new Point(val[0], val[1]), new Scalar(0, 255, 0), 3); // faz parte do antigo
                 val[0] = -1;
             }
-
+            String s = String.valueOf(enviar);
+            /*Verifica se esta conectado */
+            if(conectado){
+                /* Salva o texto digitado em uma string e passa para a funcao de envio */
+//                String paraEnviar = edtDado.getText().toString();
+                //Toast.makeText(MenuBluetooth.this, paraEnviar, Toast.LENGTH_SHORT).show();
+//                String paraEnviar = "H";
+                connectedThread.enviar(s);
+            }else{
+                Toast.makeText(getApplicationContext(),"Bluetooth não está conectado!", Toast.LENGTH_SHORT).show();
+            }
+            //String s = String.valueOf(enviar);
+            Log.i("LED", "LED " +s+" ");
             displayImage(outDilate);
         }
 
@@ -641,7 +725,39 @@ public class ImagemActivity extends AppCompatActivity {
 
                 displayImage(sampledImage);
             }
+            if(requestCode == SOLICITA_CONEXAO_BT){
+                /* Caso tenha recebido o endereco MAC para realizar a conexao */
+                /* Salva o MAC retornado */
+//                    MAC = data.getExtras().getString(ListaDispositivosBluetooth.ENDERECO_MAC);
+                MAC = data.getExtras().getString(ListaDispositivosBluetooth.ENDERECO_MAC);
+                /* Cria um dispositivo com o endereco retornado */
+                meuDevice = meuBluetoothAdapter.getRemoteDevice(MAC);
+
+                /* Tenta criar um socket para comunicacao */
+                try{
+                    /* Cria um socket utilizando o dispositivo externo passando o UUID desejado (SERIAL) */
+                    meuSocket = meuDevice.createRfcommSocketToServiceRecord(UUID_SERIAL_PORT);
+
+                    /* Tenta estabilizar a conexao */
+                    meuSocket.connect();
+                    conectado = true;
+//                        btnConectar.setText("DESCONECTAR");
+
+                    /*Cria uma thread */
+                    connectedThread = new ConnectedThread(meuSocket);
+                    connectedThread.start();
+
+                    Toast.makeText(getApplicationContext(), "Conectado !", Toast.LENGTH_SHORT).show();
+
+                } catch (IOException erro) {
+                    /* Caso ocorra algum problema durante a conexao */
+                    conectado = false;
+                    Toast.makeText(getApplicationContext(), "Ocorreu um erro ao tentar conectar"+"\n"+"ERRO :"+erro,Toast.LENGTH_LONG).show();
+                }
+            }
+
         }
+
     }
 
     private String getPath(Uri uri){
@@ -786,5 +902,55 @@ public class ImagemActivity extends AppCompatActivity {
         PreferenciasMinCruz preferenciasMinCruz = new PreferenciasMinCruz(ImagemActivity.this);
         int  minimoCruzamento = preferenciasMinCruz.get_C();
         textViewC.setText(minimoCruzamento+"");
+    }
+
+    private class ConnectedThread extends Thread {
+        private final InputStream mmInStream;
+        private final OutputStream mmOutStream;
+
+        public ConnectedThread(BluetoothSocket socket) {
+            meuSocket = socket;
+            InputStream tmpIn = null;
+            OutputStream tmpOut = null;
+
+            // Get the input and output streams, using temp objects because
+            // member streams are final
+            try {
+                tmpIn = socket.getInputStream();
+                tmpOut = socket.getOutputStream();
+            } catch (IOException e) { }
+
+            mmInStream = tmpIn;
+            mmOutStream = tmpOut;
+        }
+
+//        public void run() {
+//            byte[] buffer = new byte[1024];  // buffer store for the stream
+//            int bytes; // bytes returned from read()
+//
+//            // Keep listening to the InputStream until an exception occurs
+//            while (true) {
+//                try {
+//                    // Read from the InputStream
+//                    bytes = mmInStream.read(buffer);
+//
+//                    String recebidos = new String(buffer, 0, bytes);
+//
+//                    // Send the obtained bytes to the UI activity
+//                    meuHandler.obtainMessage(MENSAGEM_RECEBIDA_BT, bytes, -1, recebidos).sendToTarget();
+//                } catch (IOException e) {
+//                    break;
+//                }
+//            }
+//        }
+
+        /* Call this from the main activity to send data to the remote device */
+        public void enviar (String dado) {
+            byte[] msgBuffer = dado.getBytes();
+            try {
+                mmOutStream.write(msgBuffer);
+            } catch (IOException e) { }
+        }
+
     }
 }
