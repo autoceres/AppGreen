@@ -42,9 +42,18 @@
         android:id="@+id/bluetooth"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_below="@+id/bt_bico_manual"
+        android:layout_marginTop="134dp"
+        android:text="Bluetooth"
+        android:layout_centerHorizontal="true"/>
+
+    <Button
+        android:id="@+id/bt_bico_manual"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_below="@+id/detectarImagem"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="66dp"
-        android:text="Bluetooth" />
+        android:layout_marginTop="128dp"
+        android:text="Controle Bico a Bico" />
 
 </RelativeLayout>

@@ -18,6 +18,7 @@ public class MainActivity extends AppCompatActivity {
     private Button bt_detectarVideo;
     private Button bt_tempoReal;
     private Button bt_bluetooth;
+    private Button bt_bico_manual;
 
     private String [] permissoesNecessarias = new String[]{
             Manifest.permission.BLUETOOTH,
@@ -38,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
         //bt_detectarVideo = (Button) findViewById(R.id.detectarVideo);
         //bt_tempoReal = (Button) findViewById(R.id.tempoReal);
         bt_bluetooth = (Button) findViewById(R.id.bluetooth);
+        bt_bico_manual = (Button) findViewById(R.id.bt_bico_manual);
 
 //        bt_calibrar.setOnClickListener(new View.OnClickListener() {
 //            @Override
@@ -75,6 +77,14 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, MenuBluetooth.class);
+                startActivity(intent);
+            }
+        });
+
+        bt_bico_manual.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, Controle_manual_bico_activity.class);
                 startActivity(intent);
             }
         });
